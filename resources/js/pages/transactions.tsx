@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Check, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface ProductOption { id: number; name: string; stock: number; }
 interface TxRecord {
@@ -56,7 +56,7 @@ export default function Transactions({ products, transactions, isAdmin, filters 
                     <header className="mb-12 flex items-end justify-between">
                         <div>
                             <p className="mb-2 font-sans text-xs font-medium uppercase tracking-[0.2em] text-gd-muted">
-                                {isAdmin ? 'Admin' : 'Staff'} - Stock Movement
+                                {isAdmin ? 'Admin' : 'Staff'}: <br /> Stock Movement
                             </p>
                             <h1 className="font-serif text-[3.25rem] font-semibold leading-none tracking-tight text-gd-ink">
                                 Transactions
@@ -72,11 +72,7 @@ export default function Transactions({ products, transactions, isAdmin, filters 
                         <StatBlock label="Total Keluar" value={totalOut.toLocaleString()} note="unit stok OUT" accent="coral" />
                     </section>
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
-                        {/* ─── LEFT: FORM ─── */}
                         <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card">
-
-                            {/* Form header */}
                             <div className="border-b border-gd-hairline px-8 py-6">
                                 <p className="font-sans text-xs font-medium uppercase tracking-[0.2em] text-gd-muted">Input</p>
                                 <h2 className="mt-1 font-serif text-2xl font-semibold text-gd-ink">Transaksi Baru</h2>
@@ -301,6 +297,7 @@ export default function Transactions({ products, transactions, isAdmin, filters 
                                     const time = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                                     const date = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                                     const isIn = tx.type === 'IN';
+
                                     return (
                                         <div key={tx.id} className="flex items-center gap-5 px-8 py-4 transition-colors hover:bg-gd-surface-soft/50">
                                             {/* Direction icon — no background */}
@@ -362,6 +359,7 @@ function StatBlock({ label, value, note, accent }: {
     label: string; value: string; note: string; accent?: 'amber' | 'coral' | 'teal';
 }) {
     const valueColor = accent === 'coral' ? 'text-gd-coral' : accent === 'amber' ? 'text-gd-amber' : accent === 'teal' ? 'text-gd-teal' : 'text-gd-ink';
+
     return (
         <div className="flex flex-col justify-between p-7">
             <span className="font-sans text-xs font-medium uppercase tracking-[0.15em] text-gd-muted">{label}</span>

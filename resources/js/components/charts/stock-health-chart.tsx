@@ -4,7 +4,10 @@ import type { StockHealth } from '@/types/gudangin';
 interface StockHealthChartProps { data: StockHealth[]; }
 
 function CustomTooltip({ active, payload }: any) {
-    if (!active || !payload?.length) return null;
+    if (!active || !payload?.length) {
+        return null;
+    }
+
     const d = payload[0].payload as StockHealth;
     return (
         <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card px-4 py-3">
@@ -15,12 +18,10 @@ function CustomTooltip({ active, payload }: any) {
 }
 
 export function StockHealthChart({ data }: StockHealthChartProps) {
-    // Find the dominant segment
     const dominant = data.reduce((a, b) => a.percentage > b.percentage ? a : b, data[0]);
 
     return (
         <div className="relative flex flex-col items-center">
-            {/* Donut chart */}
             <div className="relative h-[200px] w-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>

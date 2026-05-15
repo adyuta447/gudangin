@@ -4,7 +4,10 @@ import type { DailyUsage } from '@/types/gudangin';
 interface MiniTrendChartProps { data: DailyUsage[]; }
 
 function CustomTooltip({ active, payload, label }: any) {
-    if (!active || !payload?.length) return null;
+    if (!active || !payload?.length) {
+        return null;
+    }
+
     return (
         <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card px-3 py-2">
             <p className="font-sans text-xs text-gd-muted">{label}</p>
