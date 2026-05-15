@@ -1,76 +1,41 @@
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell,
-} from 'recharts';
 import type { CategoryStock } from '@/types/gudangin';
 
-interface CategoryBarChartProps {
-    data: CategoryStock[];
-}
+interface CategoryBarChartProps { data: CategoryStock[]; }
 
-const CORAL_PALETTE = [
-    '#cc785c',
-    '#d4896f',
-    '#dc9a82',
-    '#e4ab95',
-    '#ecbca8',
-    '#c06c4e',
-    '#b46040',
-    '#a85432',
-    '#9c4824',
-];
+// Alternating palette: coral → navy → teal → amber, staying within brand trinity
+const PALETTE = ['#cc785c', '#181715', '#5db8a6', '#e8a55a', '#a9583e', '#252320', '#3d3d3a', '#6c6a64', '#8e8b82'];
 
 export function CategoryBarChart({ data }: CategoryBarChartProps) {
+    if (!data.length) return null;
+    const max = Math.max(...data.map((d) => d.totalStock), 1);
+
+    // Sort descending for editorial impact
+    const sorted = [...data].sort((a, b) => b.totalStock - a.totalStock);
+
     return (
-        <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                    data={data}
-                    layout="vertical"
-                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
-                >
-                    <CartesianGrid stroke="#e6dfd8" strokeDasharray="3 3" horizontal={false} />
-                    <XAxis
-                        type="number"
-                        tick={{ fill: '#6c6a64', fontSize: 11, fontFamily: 'Inter' }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e6dfd8' }}
-                    />
-                    <YAxis
-                        dataKey="category"
-                        type="category"
-                        tick={{ fill: '#3d3d3a', fontSize: 12, fontFamily: 'Inter' }}
-                        tickLine={false}
-                        axisLine={false}
-                        width={110}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            background: '#efe9de',
-                            border: '1px solid #e6dfd8',
-                            borderRadius: '12px',
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            boxShadow: 'none',
-                        }}
-                        labelStyle={{ color: '#141413', fontWeight: 600 }}
-                    />
-                    <Bar dataKey="totalStock" radius={[0, 6, 6, 0]} barSize={20}>
-                        {data.map((_, index) => (
-                            <Cell
-                                key={`cell-${index}`}
-                                fill={CORAL_PALETTE[index % CORAL_PALETTE.length]}
+        <div className="space-y-4">
+            {sorted.map((item, i) => {
+                const pct = (item.totalStock / max) * 100;
+                const color = PALETTE[i % PALETTE.length];
+                return (
+                    <div key={item.category} className="group">
+                        {/* Label row */}
+                        <div className="mb-2 flex items-baseline justify-between">
+                            <span className="font-sans text-sm font-medium text-gd-body">{item.category}</span>
+                            <span className="font-sans text-sm font-bold text-gd-ink tabular-nums">
+                                {item.totalStock.toLocaleString()}
+                            </span>
+                        </div>
+                        {/* Bar */}
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gd-hairline">
+                            <div
+                                className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+                                style={{ width: `${pct}%`, backgroundColor: color }}
                             />
-                        ))}
-                    </Bar>
-                </BarChart>
-            </ResponsiveContainer>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }

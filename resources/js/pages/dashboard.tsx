@@ -1,8 +1,7 @@
 import { Head } from '@inertiajs/react';
 import {
-    Package, TrendingDown, TrendingUp, AlertTriangle, XCircle,
-    Activity, BarChart3, PieChart as PieChartIcon, TableProperties,
-    ShieldCheck, CalendarClock, ArrowUpRight, ArrowDownRight, Clock,
+    TrendingDown, TrendingUp, AlertTriangle, XCircle,
+    ArrowUpRight, ArrowDownRight, MoveUpRight,
 } from 'lucide-react';
 import { UsageTrendChart } from '@/components/charts/usage-trend-chart';
 import { StockHealthChart } from '@/components/charts/stock-health-chart';
@@ -12,7 +11,11 @@ interface DailyUsage { date: string; quantity: number; }
 interface StockHealth { type: string; percentage: number; color: string; }
 interface CategoryStock { category: string; totalStock: number; }
 interface CriticalProduct { id: number; name: string; stock: number; daysLeft: number; velocity: number; minStock: number; }
-interface RestockRec { id: number; name: string; stock: number; velocity: number; daysLeft: number; minStock: number; optimalOrder: number; urgency: 'critical' | 'warning' | 'moderate'; estimatedDepletion: string; }
+interface RestockRec {
+    id: number; name: string; stock: number; velocity: number;
+    daysLeft: number; minStock: number; optimalOrder: number;
+    urgency: 'critical' | 'warning' | 'moderate'; estimatedDepletion: string;
+}
 interface RecentTx { id: number; productName: string; userName: string; quantity: number; type: 'IN' | 'OUT'; timestamp: string; }
 
 interface Props {
@@ -37,108 +40,123 @@ export default function Dashboard({
     restockRecommendations, recentTransactions,
 }: Props) {
     const stockIndicator = metrics.stockDelta >= 0 ? `+${metrics.stockDelta}` : `${metrics.stockDelta}`;
-    const stockType = metrics.stockDelta >= 0 ? 'positive' : 'negative';
+    const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
         <>
             <Head title="Dashboard" />
             <div className="min-h-screen bg-gd-canvas">
-                <div className="mx-auto max-w-[1400px] px-6 py-8 lg:px-10">
-                    <header className="mb-10">
-                        <h1 className="font-serif text-4xl font-semibold tracking-tight text-gd-ink">
-                            Inventory Overview
-                        </h1>
-                        <p className="mt-2 font-sans text-base text-gd-muted">
-                            Insight & analytics dashboard — data terakhir hari ini
-                        </p>
-                    </header>
-
-                    {/* ─── TOP METRICS ─── */}
-                    <section className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <MetricCard label="Total Produk" value={metrics.totalProducts.toLocaleString()} indicator={`+${metrics.productsAddedToday}`} indicatorType="positive" icon={Package} />
-                        <MetricCard label="Total Stok" value={metrics.totalStock.toLocaleString()} indicator={stockIndicator} indicatorType={stockType} icon={TrendingUp} />
-                        <MetricCard label="Low Stock" value={metrics.lowStockCount.toString()} indicator="warning" indicatorType="amber" icon={AlertTriangle} />
-                        <MetricCard label="Dead Stock" value={metrics.deadStockCount.toString()} indicator="critical" indicatorType="coral" icon={XCircle} />
-                    </section>
-
-                    {/* ─── RESTOCK METRICS PANEL ─── */}
-                    <section className="mb-8">
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-soft p-6" style={{ borderLeft: '4px solid #cc785c' }}>
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                                <RestockMetric label="Avg Usage" value={restockMetrics.avgUsage} />
-                                <RestockMetric label="Min Days Left" value={restockMetrics.minDaysLeft.toString()} />
-                                <RestockMetric label="Restock Need" value={restockMetrics.restockNeed.toString()} />
-                            </div>
+                <div className="mx-auto max-w-[1440px] px-8 py-10 lg:px-14">
+                    <header className="mb-14 flex items-end justify-between pb-8">
+                        <div>
+                            <p className="mb-2 font-sans text-xs font-medium uppercase tracking-[0.2em] text-gd-muted">
+                                Admin - Inventory Intelligence
+                            </p>
+                            <h1 className="font-serif text-[3.25rem] font-semibold leading-none tracking-tight text-gd-ink">
+                                Inventory
+                                <span className="ml-3 italic text-gd-coral">Overview</span>
+                            </h1>
                         </div>
+                        <p className="font-sans text-sm text-gd-muted-soft">{today}</p>
+                    </header>
+                    <section className="mb-14 grid grid-cols-4 divide-x divide-gd-hairline rounded-2xl border border-gd-hairline bg-gd-surface-card">
+                        <MetricBlock
+                            label="Total Produk"
+                            value={metrics.totalProducts.toLocaleString()}
+                            sub={`+${metrics.productsAddedToday} hari ini`}
+                            subColor="text-gd-teal"
+                        />
+                        <MetricBlock
+                            label="Total Stok"
+                            value={metrics.totalStock.toLocaleString()}
+                            sub={stockIndicator + ' vs kemarin'}
+                            subColor={metrics.stockDelta >= 0 ? 'text-gd-teal' : 'text-gd-coral'}
+                        />
+                        <MetricBlock
+                            label="Low Stock"
+                            value={metrics.lowStockCount.toString()}
+                            sub="produk hampir habis"
+                            subColor={metrics.lowStockCount > 0 ? 'text-gd-amber' : 'text-gd-muted'}
+                        />
+                        <MetricBlock
+                            label="Dead Stock"
+                            value={metrics.deadStockCount.toString()}
+                            sub="tidak bergerak"
+                            subColor={metrics.deadStockCount > 0 ? 'text-gd-coral' : 'text-gd-muted'}
+                        />
                     </section>
 
-                    {/* ─── CHARTS ROW ─── */}
-                    <section className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                            <div className="mb-4 flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-gd-muted" />
-                                <h3 className="font-serif text-lg font-semibold text-gd-ink">Usage Trend (30 Hari)</h3>
+                    {/* ─── RESTOCK INTELLIGENCE STRIP ─── */}
+                    <section className="mb-14 grid grid-cols-3 divide-x divide-gd-ink/10 rounded-2xl border border-gd-ink bg-gd-surface-dark px-0 py-0">
+                        <IntelBlock label="Avg Usage" value={restockMetrics.avgUsage} note="rata-rata harian" />
+                        <IntelBlock label="Min Days Left" value={restockMetrics.minDaysLeft.toString()} note="produk paling kritis" highlight />
+                        <IntelBlock label="Restock Need" value={restockMetrics.restockNeed.toString() + ' unit'} note="total kuantitas butuh restock" />
+                    </section>
+
+                    {/* ─── CHARTS ─── */}
+                    <section className="mb-14 grid grid-cols-1 gap-6 xl:grid-cols-5">
+                        {/* Usage Trend — wider */}
+                        <div className="col-span-3 rounded-2xl border border-gd-hairline bg-gd-surface-card p-8">
+                            <div className="mb-6 flex items-baseline justify-between">
+                                <h2 className="font-serif text-2xl font-semibold text-gd-ink">Usage Trend</h2>
+                                <span className="font-sans text-xs font-medium uppercase tracking-widest text-gd-muted">30 hari</span>
                             </div>
                             <UsageTrendChart data={usageTrend} average={avgTrend} />
                         </div>
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                            <div className="mb-4 flex items-center gap-2">
-                                <PieChartIcon className="h-4 w-4 text-gd-muted" />
-                                <h3 className="font-serif text-lg font-semibold text-gd-ink">Stock Health</h3>
+
+                        {/* Stock Health — narrower */}
+                        <div className="col-span-2 rounded-2xl border border-gd-hairline bg-gd-surface-card p-8">
+                            <div className="mb-6 flex items-baseline justify-between">
+                                <h2 className="font-serif text-2xl font-semibold text-gd-ink">Stock Health</h2>
+                                <span className="font-sans text-xs font-medium uppercase tracking-widest text-gd-muted">distribusi</span>
                             </div>
                             <StockHealthChart data={stockHealth} />
                         </div>
                     </section>
 
-                    {/* ─── RESTOCK RECOMMENDATIONS (DECISION OUTPUT) ─── */}
+                    {/* ─── RESTOCK RECOMMENDATIONS (DECISION TABLE) ─── */}
                     {restockRecommendations.length > 0 && (
-                        <section className="mb-8">
-                            <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                                <div className="mb-5 flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4 text-gd-coral" />
-                                    <h3 className="font-serif text-lg font-semibold text-gd-ink">Rekomendasi Restock</h3>
-                                    <span className="ml-auto rounded-full bg-gd-coral/10 px-3 py-1 font-sans text-xs font-medium text-gd-coral">
-                                        {restockRecommendations.length} produk
+                        <section className="mb-14">
+                            <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card">
+                                {/* Table header row */}
+                                <div className="flex items-baseline justify-between border-b border-gd-hairline px-8 py-6">
+                                    <h2 className="font-serif text-2xl font-semibold text-gd-ink">Rekomendasi Restock</h2>
+                                    <span className="font-sans text-xs font-medium uppercase tracking-widest text-gd-coral">
+                                        {restockRecommendations.length} produk perlu aksi
                                     </span>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-gd-hairline">
-                                                <th className="px-4 py-3 text-left font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Produk</th>
-                                                <th className="px-4 py-3 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Stok</th>
-                                                <th className="px-4 py-3 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Velocity</th>
-                                                <th className="px-4 py-3 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Sisa Hari</th>
-                                                <th className="px-4 py-3 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Estimasi Habis</th>
-                                                <th className="px-4 py-3 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Order Optimal</th>
-                                                <th className="px-4 py-3 text-center font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Urgensi</th>
+                                                <th className="px-8 py-4 text-left font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Produk</th>
+                                                <th className="px-6 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Stok</th>
+                                                <th className="px-6 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Velocity</th>
+                                                <th className="px-6 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Sisa Hari</th>
+                                                <th className="px-6 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Habis Estimasi</th>
+                                                <th className="px-6 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Order Optimal</th>
+                                                <th className="px-8 py-4 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Urgensi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {restockRecommendations.map((rec) => (
-                                                <tr key={rec.id} className="border-b border-gd-hairline/50 transition-colors hover:bg-gd-surface-soft/50">
-                                                    <td className="px-4 py-3.5 font-sans text-sm font-medium text-gd-ink">{rec.name}</td>
-                                                    <td className="px-4 py-3.5 text-right font-sans text-sm font-bold text-gd-ink">{rec.stock}</td>
-                                                    <td className="px-4 py-3.5 text-right font-sans text-sm text-gd-body">{rec.velocity}/day</td>
-                                                    <td className="px-4 py-3.5 text-right">
-                                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 font-sans text-sm font-bold ${
-                                                            rec.daysLeft <= 3 ? 'bg-gd-coral/10 text-gd-coral' :
-                                                            rec.daysLeft <= 7 ? 'bg-gd-amber/10 text-gd-amber' : 'text-gd-ink'
-                                                        }`}>{rec.daysLeft}</span>
+                                            {restockRecommendations.map((rec, i) => (
+                                                <tr key={rec.id}
+                                                    className={`border-b border-gd-hairline/60 transition-colors hover:bg-gd-surface-soft/60 ${i === restockRecommendations.length - 1 ? 'border-b-0' : ''}`}>
+                                                    <td className="px-8 py-4">
+                                                        <span className="font-sans text-sm font-semibold text-gd-ink">{rec.name}</span>
                                                     </td>
-                                                    <td className="px-4 py-3.5 text-right font-sans text-sm text-gd-body">
-                                                        <span className="flex items-center justify-end gap-1">
-                                                            <CalendarClock className="h-3 w-3" />
-                                                            {rec.estimatedDepletion}
-                                                        </span>
+                                                    <td className="px-6 py-4 text-right font-sans text-sm font-bold text-gd-ink">{rec.stock}</td>
+                                                    <td className="px-6 py-4 text-right font-sans text-sm text-gd-muted">{rec.velocity}/day</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`font-sans text-sm font-bold ${
+                                                            rec.daysLeft <= 3 ? 'text-gd-coral' :
+                                                            rec.daysLeft <= 7 ? 'text-gd-amber' : 'text-gd-ink'
+                                                        }`}>{rec.daysLeft}d</span>
                                                     </td>
-                                                    <td className="px-4 py-3.5 text-right font-sans text-sm font-bold text-gd-teal">{rec.optimalOrder} unit</td>
-                                                    <td className="px-4 py-3.5 text-center">
-                                                        <span className={`inline-flex rounded-full px-3 py-1 font-sans text-xs font-bold uppercase ${
-                                                            rec.urgency === 'critical' ? 'bg-gd-coral/15 text-gd-coral' :
-                                                            rec.urgency === 'warning' ? 'bg-gd-amber/15 text-gd-amber' :
-                                                            'bg-gd-teal/15 text-gd-teal'
-                                                        }`}>{rec.urgency}</span>
+                                                    <td className="px-6 py-4 text-right font-sans text-sm text-gd-muted">{rec.estimatedDepletion}</td>
+                                                    <td className="px-6 py-4 text-right font-sans text-sm font-bold text-gd-teal">{rec.optimalOrder}</td>
+                                                    <td className="px-8 py-4 text-right">
+                                                        <UrgencyPill urgency={rec.urgency} />
                                                     </td>
                                                 </tr>
                                             ))}
@@ -148,37 +166,35 @@ export default function Dashboard({
                             </div>
                         </section>
                     )}
-
-                    {/* ─── CRITICAL + RECENT TRANSACTIONS ─── */}
-                    <section className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
-                        {/* Critical Products */}
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                            <div className="mb-5 flex items-center gap-2">
-                                <TableProperties className="h-4 w-4 text-gd-muted" />
-                                <h3 className="font-serif text-lg font-semibold text-gd-ink">Critical Products</h3>
+                    <section className="mb-14 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card">
+                            <div className="border-b border-gd-hairline px-8 py-6">
+                                <h2 className="font-serif text-2xl font-semibold text-gd-ink">Critical Products</h2>
+                                <p className="mt-0.5 font-sans text-xs text-gd-muted">Produk dengan sisa stok paling kritis</p>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gd-hairline">
-                                            <th className="px-3 py-2 text-left font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Produk</th>
-                                            <th className="px-3 py-2 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Stok</th>
-                                            <th className="px-3 py-2 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Sisa</th>
-                                            <th className="px-3 py-2 text-right font-sans text-xs font-medium uppercase tracking-wider text-gd-muted">Velocity</th>
+                                            <th className="px-8 py-3 text-left font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Produk</th>
+                                            <th className="px-5 py-3 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Stok</th>
+                                            <th className="px-5 py-3 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Sisa</th>
+                                            <th className="px-8 py-3 text-right font-sans text-xs font-medium uppercase tracking-[0.12em] text-gd-muted">Velocity</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {criticalProducts.map((p) => (
-                                            <tr key={p.id} className="border-b border-gd-hairline/50 transition-colors hover:bg-gd-surface-soft/50">
-                                                <td className="px-3 py-3 font-sans text-sm font-medium text-gd-ink">{p.name}</td>
-                                                <td className="px-3 py-3 text-right font-sans text-sm font-bold text-gd-ink">{p.stock}</td>
-                                                <td className="px-3 py-3 text-right">
-                                                    <span className={`inline-flex rounded-full px-2 py-0.5 font-sans text-sm font-bold ${
-                                                        p.daysLeft <= 3 ? 'bg-gd-coral/10 text-gd-coral' :
-                                                        p.daysLeft <= 7 ? 'bg-gd-amber/10 text-gd-amber' : 'text-gd-ink'
-                                                    }`}>{p.daysLeft}</span>
+                                        {criticalProducts.map((p, i) => (
+                                            <tr key={p.id}
+                                                className={`border-b border-gd-hairline/60 transition-colors hover:bg-gd-surface-soft/60 ${i === criticalProducts.length - 1 ? 'border-b-0' : ''}`}>
+                                                <td className="px-8 py-3.5 font-sans text-sm font-semibold text-gd-ink">{p.name}</td>
+                                                <td className="px-5 py-3.5 text-right font-sans text-sm font-bold text-gd-ink">{p.stock}</td>
+                                                <td className="px-5 py-3.5 text-right">
+                                                    <span className={`font-sans text-sm font-bold ${
+                                                        p.daysLeft <= 3 ? 'text-gd-coral' :
+                                                        p.daysLeft <= 7 ? 'text-gd-amber' : 'text-gd-ink'
+                                                    }`}>{p.daysLeft}d</span>
                                                 </td>
-                                                <td className="px-3 py-3 text-right font-sans text-sm text-gd-body">{p.velocity}/d</td>
+                                                <td className="px-8 py-3.5 text-right font-sans text-sm text-gd-muted">{p.velocity}/day</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -186,88 +202,99 @@ export default function Dashboard({
                             </div>
                         </div>
 
-                        {/* Recent Transactions */}
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                            <div className="mb-5 flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-gd-muted" />
-                                <h3 className="font-serif text-lg font-semibold text-gd-ink">Aktivitas Terbaru</h3>
+                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card">
+                            <div className="border-b border-gd-hairline px-8 py-6">
+                                <h2 className="font-serif text-2xl font-semibold text-gd-ink">Aktivitas Terbaru</h2>
+                                <p className="mt-0.5 font-sans text-xs text-gd-muted">Semua transaksi oleh seluruh staff</p>
                             </div>
-                            <div className="space-y-0">
+                            <div className="divide-y divide-gd-hairline/60">
                                 {recentTransactions.map((tx) => {
-                                    const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                                    const dt = new Date(tx.timestamp);
+                                    const time = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                                    const date = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                                     const isIn = tx.type === 'IN';
                                     return (
-                                        <div key={tx.id} className="flex items-center gap-4 border-b border-gd-hairline/50 py-3 last:border-b-0">
-                                            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isIn ? 'bg-gd-teal/10 text-gd-teal' : 'bg-gd-coral/10 text-gd-coral'}`}>
-                                                {isIn ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                                            </div>
+                                        <div key={tx.id} className="flex items-center gap-5 px-8 py-4 transition-colors hover:bg-gd-surface-soft/60">
+                                            {isIn
+                                                ? <ArrowDownRight className="h-4 w-4 flex-shrink-0 text-gd-teal" />
+                                                : <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-gd-coral" />
+                                            }
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-sans text-sm text-gd-ink truncate">
-                                                    <span className="font-medium">{tx.productName}</span>{' '}
-                                                    <span className="text-gd-muted">{isIn ? 'masuk' : 'keluar'}</span>{' '}
-                                                    <span className="font-bold">{tx.quantity}</span>
+                                                <p className="font-sans text-sm font-semibold text-gd-ink truncate">{tx.productName}</p>
+                                                <p className="font-sans text-xs text-gd-muted">
+                                                    {isIn ? '+' : '−'}{tx.quantity} unit · {tx.userName}
                                                 </p>
-                                                <p className="font-sans text-xs text-gd-muted-soft">oleh {tx.userName}</p>
                                             </div>
-                                            <span className="flex-shrink-0 font-sans text-xs text-gd-muted-soft">{time}</span>
+                                            <div className="flex-shrink-0 text-right">
+                                                <p className="font-sans text-xs font-medium text-gd-muted-soft">{date}</p>
+                                                <p className="font-sans text-xs text-gd-muted-soft">{time}</p>
+                                            </div>
                                         </div>
                                     );
                                 })}
                                 {recentTransactions.length === 0 && (
-                                    <p className="py-6 text-center font-sans text-sm text-gd-muted-soft">Belum ada transaksi</p>
+                                    <p className="px-8 py-8 font-sans text-sm text-gd-muted-soft">Belum ada transaksi</p>
                                 )}
                             </div>
                         </div>
                     </section>
-
-                    {/* ─── CATEGORY DISTRIBUTION ─── */}
-                    <section className="mb-8">
-                        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-6">
-                            <div className="mb-4 flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4 text-gd-muted" />
-                                <h3 className="font-serif text-lg font-semibold text-gd-ink">Category Distribution</h3>
-                            </div>
+                    <section className="mb-8 rounded-2xl border border-gd-hairline bg-gd-surface-card">
+                        <div className="border-b border-gd-hairline px-8 py-6">
+                            <h2 className="font-serif text-2xl font-semibold text-gd-ink">Category Distribution</h2>
+                            <p className="mt-0.5 font-sans text-xs text-gd-muted">Total stok per kategori produk</p>
+                        </div>
+                        <div className="p-8">
                             <CategoryBarChart data={categoryDistribution} />
                         </div>
                     </section>
+
                 </div>
             </div>
         </>
     );
 }
 
-function MetricCard({ label, value, indicator, indicatorType, icon: Icon }: {
-    label: string; value: string; indicator: string;
-    indicatorType: 'positive' | 'negative' | 'amber' | 'coral';
-    icon: React.ComponentType<{ className?: string }>;
+function MetricBlock({ label, value, sub, subColor }: {
+    label: string; value: string; sub: string; subColor: string;
 }) {
-    const styles = { positive: 'text-gd-teal', negative: 'text-gd-coral', amber: 'text-gd-amber', coral: 'text-gd-coral' };
-    const icons = {
-        positive: <TrendingUp className="h-3.5 w-3.5" />, negative: <TrendingDown className="h-3.5 w-3.5" />,
-        amber: <AlertTriangle className="h-3.5 w-3.5" />, coral: <XCircle className="h-3.5 w-3.5" />,
-    };
     return (
-        <div className="rounded-2xl border border-gd-hairline bg-gd-surface-card p-5 transition-all duration-200 hover:border-gd-coral/30">
-            <div className="mb-3 flex items-center justify-between">
-                <span className="font-sans text-sm text-gd-muted">{label}</span>
-                <Icon className="h-4 w-4 text-gd-muted-soft" />
-            </div>
-            <div className="flex items-end justify-between">
-                <span className="font-sans text-3xl font-bold tracking-tight text-gd-ink">{value}</span>
-                <span className={`flex items-center gap-1 font-sans text-sm font-medium ${styles[indicatorType]}`}>
-                    {icons[indicatorType]}{indicator}
-                </span>
+        <div className="flex flex-col justify-between p-8">
+            <span className="font-sans text-xs font-medium uppercase tracking-[0.15em] text-gd-muted">{label}</span>
+            <div>
+                <p className="mt-4 font-sans text-5xl font-bold tracking-tight text-gd-ink">{value}</p>
+                <p className={`mt-2 font-sans text-sm ${subColor}`}>{sub}</p>
             </div>
         </div>
     );
 }
 
-function RestockMetric({ label, value }: { label: string; value: string }) {
+function IntelBlock({ label, value, note, highlight }: {
+    label: string; value: string; note: string; highlight?: boolean;
+}) {
     return (
-        <div className="text-center">
-            <p className="font-sans text-sm text-gd-muted">{label}</p>
-            <p className="mt-1 font-sans text-3xl font-bold tracking-tight text-gd-ink">{value}</p>
+        <div className={`flex flex-col justify-between px-10 py-8 ${highlight ? 'bg-gd-coral/10' : ''}`}>
+            <span className="font-sans text-xs font-medium uppercase tracking-[0.15em] text-gd-on-dark-soft">{label}</span>
+            <div>
+                <p className={`mt-4 font-sans text-4xl font-bold tracking-tight ${highlight ? 'text-gd-coral' : 'text-gd-on-dark'}`}>
+                    {value}
+                </p>
+                <p className="mt-2 font-sans text-xs text-gd-on-dark-soft">{note}</p>
+            </div>
         </div>
+    );
+}
+
+function UrgencyPill({ urgency }: { urgency: 'critical' | 'warning' | 'moderate' }) {
+    const map = {
+        critical: 'text-gd-coral',
+        warning: 'text-gd-amber',
+        moderate: 'text-gd-teal',
+    };
+    const label = { critical: 'Critical', warning: 'Warning', moderate: 'Moderate' };
+    return (
+        <span className={`font-sans text-xs font-bold uppercase tracking-wider ${map[urgency]}`}>
+            {label[urgency]}
+        </span>
     );
 }
 

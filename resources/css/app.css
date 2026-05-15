@@ -195,4 +195,24 @@
         font-weight: 400;
         font-size: 0.875rem;
     }
+
+    .input-field {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid #e6dfd8;
+        background-color: #faf9f5;
+        padding: 0.625rem 1rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        color: #141413;
+    }
+
+    .input-field:focus {
+        outline: none;
+        border-color: #cc785c;
+    }
+
+    .input-field::placeholder {
+        color: #8e8b82;
+    }
 }
